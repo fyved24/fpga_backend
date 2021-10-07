@@ -9,17 +9,16 @@ class DbCtl(object):
 
     def save(self, hook):
         while True:
+            data = self.buf.get()
+            self.cache.append(data)
+            if hook is not None:
+                hook(data)
             if len(self.cache) > 9:
                 self.write()
-                if hook is not None:
-                    hook(self.cache)
                 self.cache = []
-            else:
-                print(self.cache)
-                self.cache.append(self.buf.get())
 
     def write(self):
-        print(self.cache)
+        pass
 
     def loop_save(self, hook=None):
         t = threading.Thread(target=self.save, args=(hook,))
