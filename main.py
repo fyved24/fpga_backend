@@ -28,7 +28,7 @@ if __name__ == '__main__':
     # a buf used for data from com5
 
     ser = SerialPort('COM5', 115200, 2)
-    buf = ser.buf
+    buf = ser.buf1
     db = DbCtl(buf)
     ser.loop_recv()
     db.loop_save(send_to_frontend)

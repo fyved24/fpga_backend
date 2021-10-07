@@ -1,7 +1,7 @@
 import serial
 import time
 
-file_path = 'C:\\Users\\pc\\Desktop\\Rec211007181154.txt'
+file_path = 'C:\\Users\\pc\\Desktop\\proto2.txt'
 ser = serial.Serial('COM4', 115200, bytesize=8)
 with open(file_path, 'r') as file:
     data = file.readline()

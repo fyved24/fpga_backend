@@ -7,41 +7,48 @@ import serial
 class SerialPort(object):
     def __init__(self, port, baudrate, size):
         self.size = size
-        self.buf = Queue()
+        self.buf1 = Queue()
+        self.buf2 = Queue()
         self.port = serial.Serial(port, baudrate, bytesize=8)
 
     def recv(self):
-        pre_ff = False
-        read_flag = False
         while True:
-            if read_flag:
-                frame = self.port.read(2).hex()
-                flag, data = self.parse(frame)
-                print(f"frame: {frame}, flag: {flag}, data: {data}")
-                if flag == '000000':
-                    self.buf.put(data)
+            frame = self.port.read(2).hex()
+            head1, head2, data = self.parse(frame)
+            if self.is_available(head1, head2, data):
+                # 是ch1的话
+                if head1[0] == '0':
+                    self.buf1.put(data)
                 else:
-                    if frame == 'ffff':
-                        print('end of a paragraph')
-                    else:
-                        read_flag = False
+                    self.buf2.put(data)
             else:
-                t = self.port.read().hex()
-                if t == 'ff' and pre_ff:
-                    read_flag = True
-                else:
-                    read_flag = False
-                if t == 'ff':
-                    pre_ff = True
-                else:
-                    pre_ff = False
+                # 无效的话就丢弃一帧，继续读
+                self.port.read().hex()
+
+    def is_available(self, head1, head2, data):
+        """
+        ch1 000_____ 010_____
+        ch2 100_____ 110_____
+        :param head1: _00
+        :param head2: _10
+        :param data:
+        :return:
+        """
+        # 判断数据帧是否有效的
+        print(f"head1: {head1}, head2: {head2}, data: {data}")
+        if head1[0] == head2[0]:
+            if head1[1] == '0' and head2[1] == '1':
+                return True
+
+        return False
 
     def parse(self, frame):
         num = int(frame, 16)
         b_num = bin(num)[2:].zfill(16)
-        flag = b_num[:6]
-        data = b_num[-10:]
-        return flag, data
+        head1 = b_num[:3]
+        head2 = b_num[8:11]
+        data = b_num[3:8] + b_num[11:]
+        return head1, head2, data
 
     def loop_recv(self):
         t = threading.Thread(target=self.recv)
