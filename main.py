@@ -11,8 +11,9 @@ def send_to_frontend(data):
 
 if __name__ == '__main__':
     # a buf used for data from com5
-    buf = Queue(10)
-    ser = SerialPort('COM5', 115200, 2, buf)
+
+    ser = SerialPort('COM5', 115200, 2)
+    buf = ser.buf
     db = DbCtl(buf)
     ser.loop_recv()
     db.loop_save(send_to_frontend)
