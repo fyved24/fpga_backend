@@ -11,5 +11,5 @@ with open(file_path, 'r') as file:
         byte_array = bytes.fromhex(hex_code)
         print(byte_array)
         ser.write(byte_array)
-        time.sleep(0.1)
+        # time.sleep(0.1)
     ser.close()

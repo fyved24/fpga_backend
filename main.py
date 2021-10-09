@@ -2,7 +2,7 @@ from serial_ctl import SerialPort
 from db_ctrl import DbCtl
 import matplotlib.pyplot as plt  # 导入
 import seaborn as sns
-
+import json
 sns.set(color_codes=True)  # 导入seaborn包设定颜色
 
 Y = []
@@ -17,6 +17,7 @@ def send_to_frontend(frame):
     print(frame)
     print('send_to_frontend')
     num = int(data, 2)
+    num = (num - 511) / (511 / 5)
     if ch == 1:
         Y.append(num)
         Y = Y[-1000:]
@@ -32,6 +33,16 @@ def send_to_frontend(frame):
     plt.ylabel('num')
     plt.legend()
     plt.pause(0.01)
+
+
+def save_to_file(frame):
+    data = frame.get('data')
+    num = int(data, 2)
+    num = round((num - 511) / (511 / 5), 2)
+    frame['data'] = num
+    with open('file.json', 'a+') as f:
+        print(frame)
+        f.write(json.dumps(frame) + '\n')
 
 
 if __name__ == '__main__':
