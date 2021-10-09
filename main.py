@@ -1,11 +1,7 @@
-import matplotlib
-
 from serial_ctl import SerialPort
 from db_ctrl import DbCtl
-import math
 import matplotlib.pyplot as plt  # 导入
 import seaborn as sns
-# matplotlib.use('Agg')
 
 sns.set(color_codes=True)  # 导入seaborn包设定颜色
 
@@ -24,17 +20,18 @@ def send_to_frontend(frame):
     if ch == 1:
         Y.append(num)
         Y = Y[-1000:]
-        plt.figure(1)
-        plt.clf()
-        plt.plot(Y)
-        plt.pause(0.01)
+
     else:
         Y2.append(num)
         Y2 = Y2[-1000:]
-        plt.figure(2)
-        plt.clf()
-        plt.plot(Y2)
-        plt.pause(0.01)
+
+    plt.clf()
+    plt.plot(Y, label='ch1')
+    plt.plot(Y2, label='ch2')
+    plt.xlabel('frame')
+    plt.ylabel('num')
+    plt.legend()
+    plt.pause(0.01)
 
 
 if __name__ == '__main__':
