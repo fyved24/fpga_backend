@@ -7,8 +7,7 @@ import serial
 class SerialPort(object):
     def __init__(self, port, baudrate, size):
         self.size = size
-        self.buf1 = Queue()
-        self.buf2 = Queue()
+        self.buf = Queue()
         self.port = serial.Serial(port, baudrate, bytesize=8)
 
     def recv(self):
@@ -18,9 +17,15 @@ class SerialPort(object):
             if self.is_available(head1, head2, data):
                 # 是ch1的话
                 if head1[0] == '0':
-                    self.buf1.put(data)
+                    self.buf.put({
+                        'ch': 1,
+                        'data': data
+                    })
                 else:
-                    self.buf2.put(data)
+                    self.buf.put({
+                        'ch': 2,
+                        'data': data
+                    })
             else:
                 # 无效的话就丢弃一帧，继续读
                 self.port.read().hex()
@@ -39,7 +44,6 @@ class SerialPort(object):
         if head1[0] == head2[0]:
             if head1[1] == '0' and head2[1] == '1':
                 return True
-
         return False
 
     def parse(self, frame):
