@@ -35,7 +35,7 @@ class WsServer(object):
         print(f'send {message}')
         message = json.dumps(message)
 
-        asyncio.get_event_loop().run_until_complete(self.ws.send(message))
+        asyncio.run(self.ws.send(message))
 
 
 if __name__ == '__main__':
