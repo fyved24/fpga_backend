@@ -1,43 +1,76 @@
 import asyncio
 import json
-import threading
+import websockets
+from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
 
-from websockets import serve
-
-
-class WsServer(object):
-    def __init__(self, ip, port):
-        self.ip = ip
-        self.port = port
-        self.ws = None
-
-    def start(self):
-        print('websocket server started')
-
-        async def echo(websocket, path):
-            self.ws = websocket
-            async for message in websocket:
-                print(self)
-                await websocket.send(message)
-
-        async def main(ip, port):
-            async with serve(echo, ip, port):
-                await asyncio.Future()  # run forever
-
-        asyncio.run(main(self.ip, self.port))
-
-    def loop(self):
-        t = threading.Thread(target=self.start)
-        t.start()
-        t.join()
-
-    def send(self, message):
-        print(f'send {message}')
-        message = json.dumps(message)
-
-        asyncio.run(self.ws.send(message))
+users = []
 
 
-if __name__ == '__main__':
-    server = WsServer('localhost', 8765)
-    server.loop()
+async def register(ws):
+    print(f"{ws} register ")
+    message = f" hello {ws}"
+    await ws.send(message)
+    users.append(ws)
+    print(users)
+
+
+async def heartbeat(ws):
+    message = json.dumps({"type": "heartbeat", "value": "pong"})
+    while True:
+        await ws.send(message)
+        print("ping")
+        hb_response = None
+        hb_response = await asyncio.wait_for(ws.recv(), timeout=10)
+        try:
+            print(hb_response)
+        except:
+            raise Exception("Heartbeat break down")
+        await asyncio.sleep(5)
+
+
+async def send_data(ws):
+    for i in range(6):
+        data = json.dumps({"type": "data", "value": i})
+        await ws.send(data)
+        print("sent data: ", i)
+        await asyncio.sleep(i)
+
+
+async def recv_msg(ws):
+    while True:
+        try:
+            msg = await ws.recv()
+            await dispatch(ws, msg)
+        except (ConnectionClosedOK, ConnectionClosedError, ConnectionResetError) as e:
+            print(e)
+            users.remove(ws)
+            break
+
+
+async def close_ws(ws):
+    users.remove(ws)
+
+
+async def dispatch(ws, message):
+    for user in users:
+        if ws != user:
+            await user.send(message)
+
+
+async def serve(ws, path):
+    await register(ws)
+    # await dispatch(ws, message)
+    task1 = asyncio.create_task(recv_msg(ws))
+    # task2 = asyncio.create_task(close_ws(ws))
+    # task2 = asyncio.create_task(send_data(ws))
+    # await task1
+    await task1
+    # await task2
+
+
+def server():
+    start_server = websockets.serve(serve, "localhost", 8765, ping_timeout=None)
+
+    asyncio.get_event_loop().run_until_complete(start_server)
+    asyncio.get_event_loop().run_forever()
+

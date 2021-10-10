@@ -22,7 +22,8 @@ class SerialPort(object):
         while True:
             frame = self.port.read(2).hex()
             if frame == 'ffff' and len(self.segment) > 0:
-                self._hook(self.segment)
+                if self._hook is not None:
+                    self._hook(self.segment)
                 self.segment = []
             head1, head2, data = self.parse(frame)
             if self.is_available(head1, head2, data):

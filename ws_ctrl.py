@@ -1,7 +1,11 @@
+import json
+
 from websocket import create_connection
 
-ws = create_connection("ws://localhost:8765")
 
+class WebSocketCtrl(object):
+    def __init__(self, ip, port):
+        self.ws = create_connection(f"ws://{ip}:{port}")
 
-def send(message):
-    ws.send(message)
+    def send(self, message):
+        self.ws.send(json.dumps(message))

@@ -6,10 +6,13 @@ class DbCtl(object):
         # a buf used for data from serial
         self.buf = buf
         self.cache = []
+        self._hook = None
 
     def save(self):
         while True:
             data = self.buf.get()
+            if self._hook is not None:
+                self._hook(data)
             self.cache.append(data)
             if len(self.cache) > 9:
                 self.write()
@@ -17,6 +20,9 @@ class DbCtl(object):
 
     def write(self):
         pass
+
+    def set_hook(self, hook):
+        self._hook = hook
 
     def loop_save(self):
         print('db listening')
