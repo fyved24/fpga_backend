@@ -3,6 +3,9 @@ from db_ctrl import DbCtl
 import matplotlib.pyplot as plt  # 导入
 import seaborn as sns
 import json
+
+from ws_server import WsServer
+
 sns.set(color_codes=True)  # 导入seaborn包设定颜色
 
 Y = []
@@ -46,10 +49,11 @@ def save_to_file(frame):
 
 
 if __name__ == '__main__':
-    # a buf used for data from com5
-
+    ws = WsServer('localhost', 8765)
     ser = SerialPort('COM5', 115200, 2)
     buf = ser.buf
+    ser.set_hook(ws.send)
     db = DbCtl(buf)
     ser.loop_recv()
-    db.loop_save(send_to_frontend)
+    db.loop_save()
+    ws.loop()

@@ -7,12 +7,10 @@ class DbCtl(object):
         self.buf = buf
         self.cache = []
 
-    def save(self, hook):
+    def save(self):
         while True:
             data = self.buf.get()
             self.cache.append(data)
-            if hook is not None:
-                hook(data)
             if len(self.cache) > 9:
                 self.write()
                 self.cache = []
@@ -20,6 +18,7 @@ class DbCtl(object):
     def write(self):
         pass
 
-    def loop_save(self, hook=None):
-        t = threading.Thread(target=self.save, args=(hook,))
+    def loop_save(self):
+        print('db listening')
+        t = threading.Thread(target=self.save)
         t.start()
