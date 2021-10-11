@@ -21,10 +21,11 @@ class SerialPort(object):
         asyncio.set_event_loop(new_loop)
         while True:
             frame = self.port.read(2).hex()
-            if frame == 'ffff' and len(self.segment) > 0:
-                if self._hook is not None:
+            if frame == 'ffff':
+                if len(self.segment) > 0 and self._hook is not None:
                     self._hook(self.segment)
                 self.segment = []
+                continue
             head1, head2, data = self.parse(frame)
             if self.is_available(head1, head2, data):
                 # 是ch1的话
