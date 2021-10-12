@@ -1,13 +1,11 @@
 import multiprocessing
 from serial_ctl import SerialPort
-from db_ctrl import DbCtl
 import matplotlib.pyplot as plt  # 导入
 import seaborn as sns
 import json
 
 from ws_server import server as ws_server
 from ws_ctrl import WebSocketCtrl
-
 
 sns.set(color_codes=True)  # 导入seaborn包设定颜色
 
@@ -53,15 +51,15 @@ def save_to_file(frame):
 
 if __name__ == '__main__':
     ser = SerialPort('COM5', 115200, 2)
-    buf = ser.buf
-    db = DbCtl(buf)
+    # db = DbCtl(buf)
     ser.loop_recv()
-    db.loop_save()
+    # db.loop_save()
     # 开启websocket 服务
-
     t = multiprocessing.Process(target=ws_server)
     t.start()
     ws = WebSocketCtrl('localhost', 8765)
+    ws.set_hook(ser.send)
+    ws.start()
     # db.set_hook(ws.send)
     ser.set_hook(ws.send)
     t.join()

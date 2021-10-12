@@ -8,7 +8,6 @@ import serial
 class SerialPort(object):
     def __init__(self, port, baudrate, size):
         self.size = size
-        self.buf = Queue()
         self.segment = []
         self.port = serial.Serial(port, baudrate, bytesize=8)
         self._hook = None
@@ -16,16 +15,19 @@ class SerialPort(object):
     def set_hook(self, hook):
         self._hook = hook
 
+    def send(self, data):
+        bdata = bytes.fromhex(data)
+        print(f'writing data {bdata}')
+        self.port.write(bdata)
+
     def recv(self):
         new_loop = asyncio.new_event_loop()
         asyncio.set_event_loop(new_loop)
         while True:
-            frame = self.port.read(2).hex()
-            if frame == 'ffff':
-                if len(self.segment) > 0 and self._hook is not None:
-                    self._hook(self.segment)
+            if len(self.segment) > 3:
+                self._hook(self.segment)
                 self.segment = []
-                continue
+            frame = self.port.read(2).hex()
             head1, head2, data = self.parse(frame)
             if self.is_available(head1, head2, data):
                 # 是ch1的话
@@ -39,7 +41,6 @@ class SerialPort(object):
                         'ch': 2,
                         'data': data
                     }
-                self.buf.put(data)
                 self.segment.append(data)
             else:
                 # 无效的话就丢弃一帧，继续读
