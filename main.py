@@ -16,27 +16,27 @@ Y2 = []
 def send_to_frontend(frame):
     global Y
     global Y2
-    ch = frame.get('ch')
-    data = frame.get('data')
-    print(frame)
-    print('send_to_frontend')
-    num = int(data, 2)
-    num = (num - 511) / (511 / 5)
-    if ch == 1:
-        Y.append(num)
-        Y = Y[-1000:]
+    data_list = frame.get('data')
+    for data in data_list:
+        ch = data.get('ch')
+        num = data.get('num')
+        print(frame)
+        print('send_to_frontend')
+        if ch == 1:
+            Y.append(num)
+            Y = Y[-1000:]
 
-    else:
-        Y2.append(num)
-        Y2 = Y2[-1000:]
+        else:
+            Y2.append(num)
+            Y2 = Y2[-1000:]
 
-    plt.clf()
-    plt.plot(Y, label='ch1')
-    plt.plot(Y2, label='ch2')
-    plt.xlabel('frame')
-    plt.ylabel('num')
-    plt.legend()
-    plt.pause(0.01)
+        plt.clf()
+        plt.plot(Y, label='ch1')
+        plt.plot(Y2, label='ch2')
+        plt.xlabel('frame')
+        plt.ylabel('num')
+        plt.legend()
+        plt.pause(0.01)
 
 
 def save_to_file(frame):
@@ -61,5 +61,5 @@ if __name__ == '__main__':
     ws.set_hook(ser.send)
     ws.start()
     # db.set_hook(ws.send)
-    ser.set_hook(ws.send)
+    ser.set_hook(send_to_frontend)
     t.join()
