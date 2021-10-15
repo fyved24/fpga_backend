@@ -40,53 +40,57 @@ class SerialPort(object):
                     'type': 'data',
                     'data': self.segment1
                 }
-                self._hook(data)
+                if self._hook is not None:
+                    self._hook(data)
                 self.segment1 = []
             if len(self.segment2) > 3:
                 data = {
                     'type': 'data',
                     'data': self.segment2
                 }
-
-                self._hook(data)
+                if self._hook is not None:
+                    self._hook(data)
                 self.segment2 = []
 
-            frame = self.port.read(2).hex()
-            if pre_time is None:
-                pre_time = round(time.time() * 1000)
-            head1, head2, data = self.parse(frame)
-
-            if self.is_available(head1, head2, data):
-                binary_num = int(data, 2)
-                resized_num = resize(binary_num)
-                if head1[0] == '0':
-                    data = {
-                        'ch': 1,
-                        'num': resized_num
-                    }
-                    self.segment1.append(data)
-                    self.jumped_check(0, binary_num)
-                else:
-                    data = {
-                        'ch': 2,
-                        'num': resized_num
-                    }
-                    self.segment2.append(data)
-                    self.jumped_check(1, binary_num)
-            else:
-                # 无效的话就丢弃一帧，继续读
-                self.port.read().hex()
-            now = round(time.time() * 1000)
-            if now - pre_time >= 50000:
-                self.period[0] = len(self.segment1) * 10 / self.cnt[0]
-                self.period[1] = len(self.segment2) * 10 / self.cnt[1]
-                print(json.dumps({
-                    'type': 'info',
-                    'data': {
-                        'label': 'period',
-                        'period': [self.period[0], self.period[1]]
-                    }
-                }))
+            frame = self.port.read().hex()
+            num = int(frame, 16)
+            num = bin(num)[2:].zfill(8)
+            if num[:3] == '100':
+                frame += self.port.read(3).hex()
+                ch = (frame[:4], frame[-4:])
+                print(frame)
+                if pre_time is None:
+                    pre_time = round(time.time() * 1000)
+                for frame in ch:
+                    head1, head2, data = self.parse(frame)
+                    if self.is_available(head1, head2, data):
+                        binary_num = int(data, 2)
+                        resized_num = resize(binary_num)
+                        if head1[0] == '0':
+                            data = {
+                                'ch': 1,
+                                'num': resized_num
+                            }
+                            self.segment1.append(data)
+                            self.jumped_check(0, binary_num)
+                        else:
+                            data = {
+                                'ch': 2,
+                                'num': resized_num
+                            }
+                            self.segment2.append(data)
+                            self.jumped_check(1, binary_num)
+                now = round(time.time() * 1000)
+            # if now - pre_time >= 500:
+            #     self.period[0] = len(self.segment1) * 10 / self.cnt[0]
+            #     self.period[1] = len(self.segment2) * 10 / self.cnt[1]
+            #     print(json.dumps({
+            #         'type': 'info',
+            #         'data': {
+            #             'label': 'period',
+            #             'period': [self.period[0], self.period[1]]
+            #         }
+            #     }))
 
     def jumped_check(self, ch, current_binary_num):
         if current_binary_num >= self.maximum[ch]:
@@ -107,9 +111,9 @@ class SerialPort(object):
         :return:
         """
         # 判断数据帧是否有效的
-        print(f"head1: {head1}, head2: {head2}, data: {data}")
         if head1[0] == head2[0]:
             if head1[1] == '0' and head2[1] == '1':
+                # print(f"head1: {head1}, head2: {head2}, data: {data}")
                 return True
         return False
 
@@ -128,5 +132,5 @@ class SerialPort(object):
 
 
 if __name__ == '__main__':
-    ser = SerialPort('COM5', 115200, 2)
+    ser = SerialPort('COM6', 115200, 2)
     ser.loop_recv()
