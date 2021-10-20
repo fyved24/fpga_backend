@@ -22,22 +22,37 @@ class SerialPort(object):
         self.period = [0.0, 0.0]
         self.port = serial.Serial(port, baudrate, bytesize=8)
         self._hook = None
+        self.mode = 1
 
     def set_hook(self, hook):
         self._hook = hook
 
+    def set_mode(self, mode):
+        self.mode = mode
+        self.send('0fff')
+
+    """
+    给示串口发送: 
+    前端发送个0fff进入逻辑分析模式/示波器模式，然后发送f___和0___表示时钟分频的倍数，例如f123 0456 那么时钟分频为十六进制123456
+
+    如果发送1___,低12位代表阈值电压，不发送的话就是默认电压
+    从串口接收: 
+    000_____ 010_____ 代表通道一，100_____ 110_____代表通道二,但是每一个0/1都代表一个数据.
+
+    意思就是说一次发送10个数据，发两个通道
+
+
+    """
     def send(self, data):
         bdata = bytes.fromhex(data)
         print(f'writing data {bdata}')
         self.port.write(bdata)
 
     def recv(self):
-
-        pre_time = None
         while True:
             if len(self.segment1) > 3:
                 data = {
-                    'type': 'data',
+                    'type': self.mode,
                     'data': self.segment1
                 }
                 if self._hook is not None:
@@ -45,52 +60,50 @@ class SerialPort(object):
                 self.segment1 = []
             if len(self.segment2) > 3:
                 data = {
-                    'type': 'data',
+                    'type': self.mode,
                     'data': self.segment2
                 }
                 if self._hook is not None:
                     self._hook(data)
                 self.segment2 = []
+            frame = self.read_available_2byte()
+            ch = (frame[:4], frame[-4:])
+            print(frame)
+            for frame in ch:
+                head1, head2, raw_data = self.parse(frame)
+                if self.is_available(head1, head2, raw_data):
+                    binary_num = int(raw_data, 2)
+                    if self.mode == 1:
+                        dd = resize(binary_num)
+                    else:
+                        dd = raw_data
+                    if head1[0] == '0':
+                        data = {
+                            'ch': 1,
+                            'num': dd
+                        }
+                        self.segment1.append(data)
+                        self.jumped_check(0, binary_num)
+                    else:
+                        data = {
+                            'ch': 2,
+                            'num': dd
+                        }
+                        self.segment2.append(data)
 
-            frame = self.port.read().hex()
-            num = int(frame, 16)
-            num = bin(num)[2:].zfill(8)
-            if num[:3] == '100':
-                frame += self.port.read(3).hex()
-                ch = (frame[:4], frame[-4:])
-                print(frame)
-                if pre_time is None:
-                    pre_time = round(time.time() * 1000)
-                for frame in ch:
-                    head1, head2, data = self.parse(frame)
-                    if self.is_available(head1, head2, data):
-                        binary_num = int(data, 2)
-                        resized_num = resize(binary_num)
-                        if head1[0] == '0':
-                            data = {
-                                'ch': 1,
-                                'num': resized_num
-                            }
-                            self.segment1.append(data)
-                            self.jumped_check(0, binary_num)
-                        else:
-                            data = {
-                                'ch': 2,
-                                'num': resized_num
-                            }
-                            self.segment2.append(data)
-                            self.jumped_check(1, binary_num)
-                now = round(time.time() * 1000)
-            # if now - pre_time >= 500:
-            #     self.period[0] = len(self.segment1) * 10 / self.cnt[0]
-            #     self.period[1] = len(self.segment2) * 10 / self.cnt[1]
-            #     print(json.dumps({
-            #         'type': 'info',
-            #         'data': {
-            #             'label': 'period',
-            #             'period': [self.period[0], self.period[1]]
-            #         }
-            #     }))
+    def read_available_2byte(self):
+        frame = self.read_str_bytes()
+        while frame[:3] != '100':
+            frame = self.read_str_bytes()
+
+        frame += self.read_str_bytes()
+        return frame
+
+    def read_str_bytes(self, num=1):
+        frame = self.port.read(num).hex()
+        str_frame = int(frame, 16)
+        str_frame = bin(str_frame)[2:].zfill(8 * num)
+        return str_frame
 
     def jumped_check(self, ch, current_binary_num):
         if current_binary_num >= self.maximum[ch]:

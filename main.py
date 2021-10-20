@@ -17,11 +17,12 @@ def send_to_frontend(frame):
     global Y
     global Y2
     data_list = frame.get('data')
+    print('send_to_frontend')
+    print(frame)
+
     for data in data_list:
         ch = data.get('ch')
         num = data.get('num')
-        print(frame)
-        print('send_to_frontend')
         if ch == 1:
             Y.append(num)
             Y = Y[-1000:]
@@ -36,7 +37,7 @@ def send_to_frontend(frame):
         plt.xlabel('frame')
         plt.ylabel('num')
         plt.legend()
-        plt.pause(0.01)
+        plt.pause(0.001)
 
 
 def save_to_file(frame):
@@ -50,7 +51,7 @@ def save_to_file(frame):
 
 
 if __name__ == '__main__':
-    ser = SerialPort('COM5', 115200, 2)
+    ser = SerialPort('COM6', 115200, 2)
     # db = DbCtl(buf)
     ser.loop_recv()
     # db.loop_save()
@@ -58,7 +59,7 @@ if __name__ == '__main__':
     t = multiprocessing.Process(target=ws_server)
     t.start()
     ws = WebSocketCtrl('localhost', 8765)
-    ws.set_hook(ser.send)
+    ws.set_serial(ser)
     ws.start()
     # db.set_hook(ws.send)
     ser.set_hook(send_to_frontend)
