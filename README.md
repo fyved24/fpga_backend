@@ -48,7 +48,7 @@
 
 > type3 的数据会在一起发出去
 >
-> {type: 3, data: {{peroid: 1000}, vpp:  5.00}}
+> {type: 3, data: {peroid: 1000, vpp:  5.00}}
 
 ### 后端与开发板
 
