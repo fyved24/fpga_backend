@@ -21,10 +21,10 @@ class WebSocketCtrl(object):
             self._serial.set_mode(mode)
         elif msg['type'] == 'voltage':
             voltage = msg['data']
-            self._serial.send(hex(voltage)[2:])
+            self._serial.set_clock(voltage)
         elif msg['type'] == 'clock':
-            clock =  int(msg['data']) * 1000
-            self._serial.send(hex(clock)[2:])
+            clock =  int(msg['data'])
+            self._serial.set_clock(clock)
 
 
     def set_serial(self, serial):

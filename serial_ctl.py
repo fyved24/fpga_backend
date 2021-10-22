@@ -43,10 +43,23 @@ class SerialPort(object):
 
 
     """
+
     def send(self, data):
         bdata = bytes.fromhex(data)
         print(f'writing data {bdata}')
         self.port.write(bdata)
+
+    def set_clock(self, clock):
+        clock = int(clock) * 1000
+        frequency_divider = clock / 25
+        frequency_divider_str = hex(round(frequency_divider))[2:].zfill(6)
+        command = f"f{frequency_divider_str[:3]}0{frequency_divider_str[-3:]}"
+        self.send(command)
+
+    def set_voltage(self, voltage):
+        voltage = hex(voltage)[2:].zfill(3)
+        command = f"1{voltage}"
+        self.send(command)
 
     def recv(self):
         while True:
@@ -121,7 +134,7 @@ class SerialPort(object):
         :param head1: _00
         :param head2: _10
         :param data:
-        :return:
+        :return: 数据帧是否是有效的
         """
         # 判断数据帧是否有效的
         if head1[0] == head2[0]:
