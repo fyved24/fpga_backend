@@ -63,7 +63,7 @@ class SerialPort(object):
 
     def recv(self):
         while True:
-            if len(self.segment1) > 3:
+            if len(self.segment1) >= 100:
                 data = {
                     'type': self.mode,
                     'data': self.segment1
@@ -71,7 +71,7 @@ class SerialPort(object):
                 if self._hook is not None:
                     self._hook(data)
                 self.segment1 = []
-            if len(self.segment2) > 3:
+            if len(self.segment2) >= 100:
                 data = {
                     'type': self.mode,
                     'data': self.segment2
@@ -80,33 +80,30 @@ class SerialPort(object):
                     self._hook(data)
                 self.segment2 = []
             frame = self.read_available_2byte()
-            ch = (frame[:4], frame[-4:])
             print(frame)
-            for frame in ch:
-                head1, head2, raw_data = self.parse(frame)
-                if self.is_available(head1, head2, raw_data):
-                    binary_num = int(raw_data, 2)
-                    if self.mode == 1:
-                        dd = resize(binary_num)
-                    else:
-                        dd = raw_data
-                    if head1[0] == '0':
-                        data = {
-                            'ch': 1,
-                            'num': dd
-                        }
-                        self.segment1.append(data)
-                        self.jumped_check(0, binary_num)
-                    else:
-                        data = {
-                            'ch': 2,
-                            'num': dd
-                        }
-                        self.segment2.append(data)
+            head1, head2, raw_data = self.parse(frame)
+            if self.is_available(head1, head2, raw_data):
+                binary_num = int(raw_data, 2)
+                if self.mode == 1:
+                    dd = resize(binary_num)
+                else:
+                    dd = raw_data
+                if head1[0] == '0':
+                    data = {
+                        'ch': 1,
+                        'num': dd
+                    }
+                    self.segment1.append(data)
+                else:
+                    data = {
+                        'ch': 2,
+                        'num': dd
+                    }
+                    self.segment2.append(data)
 
     def read_available_2byte(self):
         frame = self.read_str_bytes()
-        while frame[:3] != '100':
+        while frame[:3] not in ('100', '000'):
             frame = self.read_str_bytes()
 
         frame += self.read_str_bytes()
@@ -144,11 +141,9 @@ class SerialPort(object):
         return False
 
     def parse(self, frame):
-        num = int(frame, 16)
-        b_num = bin(num)[2:].zfill(16)
-        head1 = b_num[:3]
-        head2 = b_num[8:11]
-        data = b_num[3:8] + b_num[11:]
+        head1 = frame[:3]
+        head2 = frame[8:11]
+        data = frame[3:8] + frame[11:]
         return head1, head2, data
 
     def loop_recv(self):
