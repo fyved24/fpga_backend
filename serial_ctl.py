@@ -51,7 +51,7 @@ class SerialPort(object):
 
     def set_clock(self, clock):
         clock = int(clock) * 1000
-        frequency_divider = clock / 25
+        frequency_divider = 2.5e7 / clock
         frequency_divider_str = hex(round(frequency_divider))[2:].zfill(6)
         command = f"f{frequency_divider_str[:3]}0{frequency_divider_str[-3:]}"
         self.send(command)
