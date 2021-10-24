@@ -2,8 +2,9 @@ import json
 import threading
 import time
 import asyncio
-
+import numpy as np
 import serial
+from scipy.fftpack import fft
 
 
 def resize(num):
@@ -64,18 +65,31 @@ class SerialPort(object):
     def recv(self):
         while True:
             if len(self.segment1) >= 100:
+
                 data = {
                     'type': self.mode,
+                    'ch': 1,
                     'data': self.segment1
                 }
+                if self.mode == 1:
+                    z = fft(self.segment1)
+                    z = np.abs(z[:round(len(z) / 2)]) / len(z)
+                    z = z.tolist()
+                    data['fft'] = z
                 if self._hook is not None:
                     self._hook(data)
                 self.segment1 = []
             if len(self.segment2) >= 100:
                 data = {
                     'type': self.mode,
+                    'ch': 2,
                     'data': self.segment2
                 }
+                if self.mode == 1:
+                    z = fft(self.segment2)
+                    z = np.abs(z[:round(len(z) / 2)]) / len(z)
+                    z = z.tolist()
+                    data['fft'] = z
                 if self._hook is not None:
                     self._hook(data)
                 self.segment2 = []
@@ -89,17 +103,10 @@ class SerialPort(object):
                 else:
                     dd = raw_data
                 if head1[0] == '0':
-                    data = {
-                        'ch': 1,
-                        'num': dd
-                    }
-                    self.segment1.append(data)
+                    self.segment1.append(dd)
                 else:
-                    data = {
-                        'ch': 2,
-                        'num': dd
-                    }
-                    self.segment2.append(data)
+
+                    self.segment2.append(dd)
 
     def read_available_2byte(self):
         frame = self.read_str_bytes()

@@ -51,7 +51,7 @@ def save_to_file(frame):
 
 
 if __name__ == '__main__':
-    ser = SerialPort('COM5', 115200, 2)
+    ser = SerialPort('COM6', 115200, 2)
     # db = DbCtl(buf)
     ser.loop_recv()
     # db.loop_save()
@@ -62,5 +62,5 @@ if __name__ == '__main__':
     ws.set_serial(ser)
     ws.start()
     # db.set_hook(ws.send)
-    ser.set_hook(send_to_frontend)
+    ser.set_hook(ws.send)
     t.join()
