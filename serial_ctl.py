@@ -29,10 +29,11 @@ class SerialPort(object):
         self._hook = hook
 
     def set_mode(self, mode):
-        print(f'mode changed to {mode}')
-        self.mode = mode
-        self.send('0fff')
-
+        if self.mode != mode:
+            print(f'current mode {self.mode}')
+            print(f'mode changed to {mode}')
+            self.mode = mode
+            self.send('0fff')
 
     def send(self, data):
         bdata = bytes.fromhex(data)
