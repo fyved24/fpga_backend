@@ -5,25 +5,29 @@ import websocket
 
 
 class WebSocketCtrl(object):
+    is_open = False
+
     def __init__(self, ip, port):
         self.ws = websocket.WebSocketApp(f'ws://{ip}:{port}',
                                          on_message=self.on_message,
-                                         on_open=self.on_open,
-                                         on_close=self.on_close
+                                         on_open=WebSocketCtrl.on_open,
+                                         on_close=WebSocketCtrl.on_close
                                          )
         self._serial = None
-        self.is_open = False
+        WebSocketCtrl.is_open = False
 
     def send(self, message):
-        if self.is_open:
+        if WebSocketCtrl.is_open:
             self.ws.send(json.dumps(message))
 
-    def on_open(self, ws):
+    @staticmethod
+    def on_open(ws):
         print('ws connection opened')
-        self.is_open = True
+        WebSocketCtrl.is_open = True
 
-    def on_close(self, ws):
-        self.is_open = False
+    @staticmethod
+    def on_close(ws):
+        WebSocketCtrl.is_open = False
 
     def on_message(self, ws, message):
         print(f"Received: {message}")
@@ -35,9 +39,8 @@ class WebSocketCtrl(object):
             voltage = msg['data']
             self._serial.set_clock(voltage)
         elif msg['type'] == 'clock':
-            clock =  int(msg['data'])
+            clock = int(msg['data'])
             self._serial.set_clock(clock)
-
 
     def set_serial(self, serial):
         self._serial = serial
