@@ -29,21 +29,10 @@ class SerialPort(object):
         self._hook = hook
 
     def set_mode(self, mode):
+        print(f'mode changed to {mode}')
         self.mode = mode
         self.send('0fff')
 
-    """
-    给示串口发送: 
-    前端发送个0fff进入逻辑分析模式/示波器模式，然后发送f___和0___表示时钟分频的倍数，例如f123 0456 那么时钟分频为十六进制123456
-
-    如果发送1___,低12位代表阈值电压，不发送的话就是默认电压
-    从串口接收: 
-    000_____ 010_____ 代表通道一，100_____ 110_____代表通道二,但是每一个0/1都代表一个数据.
-
-    意思就是说一次发送10个数据，发两个通道
-
-
-    """
 
     def send(self, data):
         bdata = bytes.fromhex(data)
@@ -51,6 +40,8 @@ class SerialPort(object):
         self.port.write(bdata)
 
     def set_clock(self, clock):
+        print(f'clock changed to {clock}')
+
         clock = int(clock) * 1000
         frequency_divider = 2.5e7 / clock
         frequency_divider_str = hex(round(frequency_divider))[2:].zfill(6)
@@ -60,11 +51,12 @@ class SerialPort(object):
     def set_voltage(self, voltage):
         voltage = hex(voltage)[2:].zfill(3)
         command = f"1{voltage}"
+        print(f'voltage changed to {voltage}')
         self.send(command)
 
     def recv(self):
         while True:
-            if len(self.segment1) >= 100:
+            if len(self.segment1) >= 1000:
 
                 data = {
                     'type': self.mode,
@@ -79,7 +71,7 @@ class SerialPort(object):
                 if self._hook is not None:
                     self._hook(data)
                 self.segment1 = []
-            if len(self.segment2) >= 100:
+            if len(self.segment2) >= 1000:
                 data = {
                     'type': self.mode,
                     'ch': 2,
