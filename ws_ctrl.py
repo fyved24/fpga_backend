@@ -43,7 +43,7 @@ class WebSocketCtrl(object):
             WebSocketCtrl._serial.set_clock(voltage)
         elif msg['type'] == 'clock':
             print('set clock')
-            clock = int(msg['data'])
+            clock = float(msg['data'])
             WebSocketCtrl._serial.set_clock(clock)
 
     def set_serial(self, serial):
