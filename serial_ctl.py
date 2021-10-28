@@ -60,7 +60,7 @@ class SerialPort(object):
     def recv(self):
         while True:
             if len(self.segment1) >= 2000:
-                self.segment1 = self.segment1[:500]
+                self.segment1 = self.segment1[:1024]
                 data = {
                     'type': self.mode,
                     'ch': 1,
@@ -75,7 +75,7 @@ class SerialPort(object):
                     self._hook(data)
                 self.segment1 = []
             if len(self.segment2) >= 2000:
-                self.segment2 = self.segment2[:500]
+                self.segment2 = self.segment2[:1024]
                 data = {
                     'type': self.mode,
                     'ch': 2,
