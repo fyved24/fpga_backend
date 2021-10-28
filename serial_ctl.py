@@ -23,13 +23,15 @@ class SerialPort(object):
         self.period = [0.0, 0.0]
         self.port = serial.Serial(port, baudrate, bytesize=8)
         self._hook = None
-        self.mode = 1
+        self.mode = 2
 
     def set_hook(self, hook):
         self._hook = hook
 
     def set_mode(self, mode):
         if self.mode != mode:
+            self.segment1 = []
+            self.segment2 = []
             print(f'current mode {self.mode}')
             print(f'mode changed to {mode}')
             self.mode = mode
@@ -57,8 +59,8 @@ class SerialPort(object):
 
     def recv(self):
         while True:
-            if len(self.segment1) >= 1000:
-
+            if len(self.segment1) >= 2000:
+                self.segment1 = self.segment1[:500]
                 data = {
                     'type': self.mode,
                     'ch': 1,
@@ -72,7 +74,8 @@ class SerialPort(object):
                 if self._hook is not None:
                     self._hook(data)
                 self.segment1 = []
-            if len(self.segment2) >= 1000:
+            if len(self.segment2) >= 2000:
+                self.segment2 = self.segment2[:500]
                 data = {
                     'type': self.mode,
                     'ch': 2,
@@ -93,13 +96,15 @@ class SerialPort(object):
                 binary_num = int(raw_data, 2)
                 if self.mode == 1:
                     dd = resize(binary_num)
+                    if head1[0] == '0':
+                        self.segment1.append(dd)
+                    else:
+                        self.segment2.append(dd)
                 else:
-                    dd = raw_data
-                if head1[0] == '0':
-                    self.segment1.append(dd)
-                else:
-
-                    self.segment2.append(dd)
+                    if head1[0] == '0':
+                        self.segment1.extend([int(x) for x in raw_data])
+                    else:
+                        self.segment2.extend([int(x) for x in raw_data])
 
     def read_available_2byte(self):
         frame = self.read_str_bytes()
