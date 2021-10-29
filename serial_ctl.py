@@ -35,7 +35,10 @@ class SerialPort(object):
             print(f'current mode {self.mode}')
             print(f'mode changed to {mode}')
             self.mode = mode
-            self.send('0fff')
+            if mode == 1:
+                self.send('0ff0')
+            elif mode == 2:
+                self.send('0fff')
 
     def send(self, data):
         bdata = bytes.fromhex(data)
