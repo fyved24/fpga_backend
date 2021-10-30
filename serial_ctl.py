@@ -105,9 +105,13 @@ class SerialPort(object):
                         self.segment2.append(dd)
                 else:
                     if head1[0] == '0':
-                        self.segment1.extend([int(x) for x in raw_data])
+                        for x in raw_data:
+                            self.segment1.append(int(x))
+                            self.segment1.append(int(x))
                     else:
-                        self.segment2.extend([int(x) for x in raw_data])
+                        for x in raw_data:
+                            self.segment2.append(int(x))
+                            self.segment2.append(int(x))
 
     def read_available_2byte(self):
         frame = self.read_str_bytes()
