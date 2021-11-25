@@ -51,13 +51,13 @@ def save_to_file(frame):
 
 
 if __name__ == '__main__':
-    ser = SerialPort('COM6', 115200, 2)
+    ser = SerialPort('/dev/tty.SLAB_USBtoUART', 115200, 2)
     # db = DbCtl(buf)
     ser.loop_recv()
     # db.loop_save()
     # 开启websocket 服务
-    t = multiprocessing.Process(target=ws_server)
-    t.start()
+    # t = multiprocessing.Process(target=ws_server)
+    # t.start()
     ws = WebSocketCtrl('localhost', 8765)
     ws.set_serial(ser)
     ws.start()

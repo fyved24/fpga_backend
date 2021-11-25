@@ -23,7 +23,7 @@ class SerialPort(object):
         self.period = [0.0, 0.0]
         self.port = serial.Serial(port, baudrate, bytesize=8)
         self._hook = None
-        self.mode = 2
+        self.mode = 1
 
     def set_hook(self, hook):
         self._hook = hook
