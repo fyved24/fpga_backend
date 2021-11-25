@@ -22,6 +22,7 @@ class SerialPort(object):
         self.cnt = [0, 0]
         self.period = [0.0, 0.0]
         self.port = serial.Serial(port, baudrate, bytesize=8)
+        self.clock = 1
         self._hook = None
         self.mode = 1
 
@@ -47,7 +48,7 @@ class SerialPort(object):
 
     def set_clock(self, clock):
         print(f'clock changed to {clock}')
-
+        self.clock = clock
         clock = float(clock) * 1000
         frequency_divider = 2.5e7 / clock
         frequency_divider_str = hex(round(frequency_divider))[2:].zfill(6)
@@ -55,45 +56,44 @@ class SerialPort(object):
         self.send(command)
 
     def set_voltage(self, voltage):
-        voltage = hex(voltage)[2:].zfill(3)
+        print(f'set_voltage{hex(round(voltage*1000))}')
+        voltage = hex(round(voltage*1000))[2:].zfill(3)
         command = f"1{voltage}"
-        print(f'voltage changed to {voltage}')
+        print(f'voltage changed to {command}')
         self.send(command)
+
+    def send_ch_msg(self, ch, msg):
+        data = {
+            'type': self.mode,
+            'ch': ch,
+            'data': msg[:1024]
+        }
+        z = fft(msg)
+        z = np.abs(z[:round(len(z) / 2)]) / len(z)
+        z = z.tolist()
+        data['fft'] = z
+        if self._hook is not None:
+            self._hook(data)
 
     def recv(self):
         while True:
-            if len(self.segment1) >= 2000:
-                self.segment1 = self.segment1[:1024]
-                data = {
-                    'type': self.mode,
-                    'ch': 1,
-                    'data': self.segment1
-                }
-                if self.mode == 1:
-                    z = fft(self.segment1)
-                    z = np.abs(z[:round(len(z) / 2)]) / len(z)
-                    z = z.tolist()
-                    data['fft'] = z
-                if self._hook is not None:
-                    self._hook(data)
+            if len(self.segment1) >= 2000 :
+                self.send_ch_msg(1, self.segment1)
                 self.segment1 = []
             if len(self.segment2) >= 2000:
-                self.segment2 = self.segment2[:1024]
-                data = {
-                    'type': self.mode,
-                    'ch': 2,
-                    'data': self.segment2
-                }
-                if self.mode == 1:
-                    z = fft(self.segment2)
-                    z = np.abs(z[:round(len(z) / 2)]) / len(z)
-                    z = z.tolist()
-                    data['fft'] = z
-                if self._hook is not None:
-                    self._hook(data)
+                self.send_ch_msg(2, self.segment2)
                 self.segment2 = []
+            if self.clock < 1:
+                msg = self.segment1 + [0 for i in range(1024 - len(self.segment1))]
+                self.send_ch_msg(1, msg)
+                msg = self.segment2 + [0 for i in range(1024 - len(self.segment2))]
+                self.send_ch_msg(2, msg)
+                if len(self.segment1) > 1023:
+                    self.segment1 = []
+                if len(self.segment2) > 1023:
+                    self.segment2 = []
             frame = self.read_available_2byte()
-            print(frame)
+            # print(frame)
             head1, head2, raw_data = self.parse(frame)
             if self.is_available(head1, head2, raw_data):
                 binary_num = int(raw_data, 2)
